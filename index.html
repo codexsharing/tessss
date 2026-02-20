@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub · upload + auto extract</title>
+    <!-- Font & icon (inter, feather) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f5f7fb 0%, #e9ecf5 100%);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            color: #1e293b;
+        }
+
+        .card {
+            max-width: 680px;
+            width: 100%;
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 2.25rem;
+            box-shadow: 0 30px 60px -15px rgba(0,20,40,0.25), 0 0 0 1px rgba(156,163,175,0.1) inset;
+            padding: 2rem 2rem 2.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .card-header h1 {
+            font-size: 1.7rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #1e293b, #2d3b52);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .gh-icon {
+            color: #24292f;
+            background: white;
+            border-radius: 100px;
+            padding: 0.3rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.03);
+        }
+
+        .input-group {
+            margin-bottom: 1.6rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .label-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: #3b4a5e;
+            margin-left: 0.25rem;
+        }
+
+        .label-row i {
+            width: 18px;
+            height: 18px;
+            color: #4b6a9b;
+        }
+
+        .field {
+            background: white;
+            border: 1px solid #dde3ea;
+            border-radius: 1.2rem;
+            padding: 0.8rem 1.2rem;
+            font-size: 0.95rem;
+            font-family: 'Inter', monospace;
+            transition: 0.15s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .field:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59,130,246,0.15);
+        }
+
+        /* token row with visibility toggle */
+        .token-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .token-wrapper .field {
+            flex: 1;
+            padding-right: 3rem;
+        }
+
+        .token-eye {
+            position: absolute;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: #778da0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0.2rem;
+            border-radius: 2rem;
+            transition: 0.1s;
+        }
+
+        .token-eye:hover {
+            color: #1e293b;
+            background: #f1f4f9;
+        }
+
+        /* repo field with slash hint */
+        .repo-hint {
+            font-size: 0.8rem;
+            color: #566f86;
+            margin-top: 0.2rem;
+            margin-left: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .repo-hint i {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* toggle switch */
+        .toggle-section {
+            background: #ecf1f7;
+            border-radius: 1.8rem;
+            padding: 0.5rem 0.5rem 0.5rem 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 1.5rem 0 2rem;
+            border: 1px solid #cdd9e6;
+        }
+
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #1e2b3c;
+        }
+
+        .toggle-label i {
+            color: #2e4b6e;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+            background: #bdc9da;
+            border-radius: 40px;
+            border: 1px solid rgba(0,0,0,0.1);
+            transition: 0.15s;
+            cursor: pointer;
+        }
+
+        .toggle-switch.active {
+            background: #1f6feb;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            background: white;
+            border-radius: 50%;
+            top: 1px;
+            left: 1px;
+            transition: 0.15s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .toggle-switch.active::after {
+            left: 31px;
+        }
+
+        /* file zone */
+        .file-zone {
+            background: #f8fafd;
+            border-radius: 1.8rem;
+            border: 2px dashed #9fb1c9;
+            padding: 1.2rem 1.5rem;
+            margin: 1rem 0 1.8rem;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            transition: background 0.1s, border-color 0.1s;
+        }
+
+        .file-zone:hover {
+            border-color: #3b82f6;
+            background: #ffffff;
+        }
+
+        .file-details {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex: 2;
+        }
+
+        .file-details i {
+            color: #3b82f6;
+            width: 28px;
+            height: 28px;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: #0a1c2f;
+            word-break: break-word;
+        }
+
+        .file-size {
+            font-size: 0.8rem;
+            color: #4c5f73;
+            margin-left: 0.25rem;
+        }
+
+        .btn-file {
+            background: #e5ecf3;
+            border-radius: 3rem;
+            border: 1px solid #b7c8dd;
+            padding: 0.5rem 1.2rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #1e2f40;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .btn-file:hover {
+            background: #dae2ec;
+            border-color: #3b82f6;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .primary-btn {
+            width: 100%;
+            background: #1e2b3c;
+            color: white;
+            border: none;
+            border-radius: 3rem;
+            padding: 1rem 1.2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            transition: 0.15s;
+            box-shadow: 0 10px 18px -8px #1f3a5f;
+            margin-top: 1rem;
+            border: 1px solid #3d5069;
+            cursor: pointer;
+        }
+
+        .primary-btn:hover:not(:disabled) {
+            background: #142汚.2);
+            background: #142536;
+            transform: scale(1.01);
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.5;
+            box-shadow: none;
+            cursor: not-allowed;
+            background: #5f6f82;
+        }
+
+        .status-box {
+            margin-top: 1.5rem;
+            background: #e2eaf3;
+            border-radius: 1.5rem;
+            padding: 0.8rem 1.2rem;
+            font-size: 0.9rem;
+            border-left: 4px solid #3b82f6;
+            color: #1e2b3c;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            word-break: break-word;
+        }
+
+        .status-box i {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .status-box.success {
+            border-left-color: #2e7d32;
+            background: #e0f0e5;
+        }
+
+        .status-box.error {
+            border-left-color: #b91c1c;
+            background: #ffe9e9;
+        }
+
+        footer {
+            margin-top: 1.2rem;
+            font-size: 0.7rem;
+            color: #6f7d91;
+            text-align: center;
+            border-top: 1px dashed #b9c9dd;
+            padding-top: 1rem;
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="card-header">
+            <i data-feather="github" class="gh-icon" width="34" height="34"></i>
+            <h1>upload → GitHub</h1>
+            <div style="flex:1"></div>
+            <span style="background:#d4e0f0; padding:0.2rem 0.9rem; border-radius:40px; font-weight:500; font-size:0.75rem;">beta · extract zip</span>
+        </div>
+
+        <!-- LOGIN: user + token (github) -->
+        <div class="input-group">
+            <div class="label-row">
+                <i data-feather="user"></i>
+                <span>GitHub user</span>
+            </div>
+            <input type="text" class="field" id="github-user" placeholder="octocat" value="octocat" autocomplete="off">
+        </div>
+
+        <div class="input-group">
+            <div class="label-row">
+                <i data-feather="key"></i>
+                <span>Token (classic / fine-grained)</span>
+            </div>
+            <div class="token-wrapper">
+                <input type="password" class="field" id="github-token" placeholder="github_pat_xxx..." value="github_pat_xxx" autocomplete="off">
+                <button class="token-eye" id="toggle-token" type="button" title="tampilkan/sembunyikan token">
+                    <i data-feather="eye" width="18" height="18"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- REPO name input -->
+        <div class="input-group">
+            <div class="label-row">
+                <i data-feather="archive"></i>
+                <span>Repository</span>
+            </div>
+            <input type="text" class="field" id="repo-name" placeholder="owner/repo  (contoh: octocat/Hello-World)" value="octocat/Hello-World">
+            <div class="repo-hint">
+                <i data-feather="info"></i> format "nama-pemilik/nama-repo"
+            </div>
+        </div>
+
+        <!-- EXTRACT ON/OFF toggle (untuk zip) -->
+        <div class="toggle-section">
+            <div class="toggle-label">
+                <i data-feather="archive"></i>
+                <span>Auto‑extract .zip</span>
+            </div>
+            <div class="toggle-switch" id="extract-toggle" role="switch" aria-checked="false" tabindex="0">
+                <!-- status dikontrol js -->
+            </div>
+        </div>
+
+        <!-- file upload area -->
+        <div class="file-zone" id="drop-zone">
+            <div class="file-details">
+                <i data-feather="upload-cloud"></i>
+                <span class="file-name" id="file-label">Tidak ada file dipilih</span>
+                <span class="file-size" id="file-size"></span>
+            </div>
+            <button class="btn-file" id="select-file-btn" type="button">
+                <i data-feather="folder"></i> Pilih file
+            </button>
+            <input type="file" id="file-input">
+        </div>
+
+        <!-- tombol upload utama -->
+        <button class="primary-btn" id="upload-btn" disabled>
+            <i data-feather="arrow-up-circle"></i> 
+            <span>Upload ke GitHub</span>
+        </button>
+
+        <!-- area status / log -->
+        <div class="status-box" id="status-area">
+            <i data-feather="info"></i>
+            <span id="status-text">Masukkan token dan file untuk mengunggah.</span>
+        </div>
+
+        <footer>
+            <i data-feather="shield"></i> Token hanya digunakan di browser · koneksi langsung ke API GitHub
+        </footer>
+    </div>
+
+    <script>
+        (function() {
+            feather.replace();
+
+            // ----- ELEMENTS -----
+            const userInput = document.getElementById('github-user');
+            const tokenInput = document.getElementById('github-token');
+            const repoInput = document.getElementById('repo-name');
+            const toggleBtn = document.getElementById('toggle-token');
+            const extractToggle = document.getElementById('extract-toggle');
+            const fileInput = document.getElementById('file-input');
+            const selectFileBtn = document.getElementById('select-file-btn');
+            const fileNameSpan = document.getElementById('file-label');
+            const fileSizeSpan = document.getElementById('file-size');
+            const uploadBtn = document.getElementById('upload-btn');
+            const statusDiv = document.getElementById('status-area');
+            const statusText = document.getElementById('status-text');
+            const dropZone = document.getElementById('drop-zone');
+
+            // state
+            let extractEnabled = false;   // on/off
+            let selectedFile = null;
+
+            // ---- helper status ----
+            function setStatus(msg, type = 'info') {
+                statusText.innerText = msg;
+                statusDiv.classList.remove('success', 'error');
+                if (type === 'success') statusDiv.classList.add('success');
+                if (type === 'error') statusDiv.classList.add('error');
+                // icon
+                const icon = statusDiv.querySelector('i');
+                feather.replace(icon); 
+            }
+
+            // validasi form (disable/enable upload)
+            function validateUploadBtn() {
+                const user = userInput.value.trim();
+                const token = tokenInput.value.trim();
+                const repo = repoInput.value.trim();
+                const hasRepo = repo.includes('/') && repo.split('/').length === 2;
+                if (user && token && hasRepo && selectedFile) {
+                    uploadBtn.disabled = false;
+                } else {
+                    uploadBtn.disabled = true;
+                }
+            }
+
+            // ---- toggle password visibility ----
+            toggleBtn.addEventListener('click', () => {
+                const type = tokenInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                tokenInput.setAttribute('type', type);
+                // ganti icon
+                toggleBtn.innerHTML = type === 'password' 
+                    ? '<i data-feather="eye" width="18" height="18"></i>' 
+                    : '<i data-feather="eye-off" width="18" height="18"></i>';
+                feather.replace();
+            });
+
+            // ---- extract toggle (on/off) ----
+            extractToggle.addEventListener('click', () => {
+                extractEnabled = !extractEnabled;
+                if (extractEnabled) {
+                    extractToggle.classList.add('active');
+                    extractToggle.setAttribute('aria-checked', 'true');
+                } else {
+                    extractToggle.classList.remove('active');
+                    extractToggle.setAttribute('aria-checked', 'false');
+                }
+            });
+            // juga bisa keyboard enter
+            extractToggle.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    extractToggle.click();
+                }
+            });
+
+            // ---- file selection ----
+            selectFileBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    selectedFile = file;
+                    fileNameSpan.innerText = file.name;
+                    fileSizeSpan.innerText = `(${(file.size / 1024).toFixed(1)} KB)`;
+                } else {
+                    selectedFile = null;
+                    fileNameSpan.innerText = 'Tidak ada file dipilih';
+                    fileSizeSpan.innerText = '';
+                }
+                validateUploadBtn();
+            });
+
+            // drag & drop sederhana
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.background = '#ecf5ff';
+                dropZone.style.borderColor = '#1f6feb';
+            });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.style.background = '';
+                dropZone.style.borderColor = '#9fb1c9';
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.style.background = '';
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    fileInput.files = e.dataTransfer.files; // sync
+                    selectedFile = file;
+                    fileNameSpan.innerText = file.name;
+                    fileSizeSpan.innerText = `(${(file.size / 1024).toFixed(1)} KB)`;
+                } else {
+                    setStatus('Hanya file biasa yang didukung', 'error');
+                }
+                validateUploadBtn();
+            });
+
+            // input fields validation listener
+            [userInput, tokenInput, repoInput].forEach(el => el.addEventListener('input', validateUploadBtn));
+            // juga saat repo berubah
+
+            // ---- upload to github ----
+            uploadBtn.addEventListener('click', async () => {
+                const ownerRepo = repoInput.value.trim();
+                const parts = ownerRepo.split('/');
+                if (parts.length !== 2) {
+                    setStatus('Format repo harus "owner/repo"', 'error');
+                    return;
+                }
+                const [owner, repo] = parts;
+                const token = tokenInput.value.trim();
+                const user = userInput.value.trim();
+                if (!selectedFile) {
+                    setStatus('Pilih file terlebih dahulu', 'error');
+                    return;
+                }
+
+                // notifikasi mulai
+                setStatus(`🔄 Mengupload ${selectedFile.name} ...`, 'info');
+                uploadBtn.disabled = true;
+
+                try {
+                    // 1. dapatkan sha jika file sudah ada (opsional, kita langsung upload dengan PUT)
+                    // tapi kita akan lakukan PUT dengan mengecek dulu? kita lakukan upload dengan create/update.
+                    // endpoint: PUT /repos/{owner}/{repo}/contents/{path}
+                    // path kita ambil dari nama file (bisa juga taruh di folder? kita simpan di root)
+                    let path = selectedFile.name;
+                    // jika extract aktif dan file zip, kita perlu memberitahu pengguna bahwa tidak bisa langsung extract via API biasa
+                    // karena API GitHub tidak menyediakan server-side extract. tapi kita bisa simulasi notifikasi.
+                    
+                    // karena ini demo, kita akan tetap upload file biasa. tapi jika extract ON dan file .zip, kita beri pesan
+                    if (extractEnabled && selectedFile.name.toLowerCase().endsWith('.zip')) {
+                        setStatus('⚠️ Ekstrak zip aktif: file akan diupload mentah, ekstrak manual perlu actions/sisi server. Untuk demo, file tetap diupload.', 'info');
+                        // bisa ditambahkan logika khusus, tapi di sini kita tetap upload sebagai file biasa.
+                    } else if (extractEnabled) {
+                        setStatus('ℹ️ Ekstrak ON, tapi file bukan .zip, tetap upload biasa.', 'info');
+                    }
+
+                    // baca file sebagai base64
+                    const base64Content = await readFileAsBase64(selectedFile);
+
+                    // body request
+                    const message = extractEnabled ? `Upload ${selectedFile.name} (auto-extract mode on)` : `Upload ${selectedFile.name}`;
+                    
+                    const requestBody = {
+                        message: message,
+                        content: base64Content,
+                        branch: 'main'      // asumsi branch main
+                    };
+
+                    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+
+                    const response = await fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        setStatus(`✅ Sukses! File terupload ke ${owner}/${repo}. Commit: ${result.commit?.sha?.slice(0,7) ?? ''}`, 'success');
+                    } else {
+                        const errMsg = result.message || 'Gagal upload, cek token/repo';
+                        setStatus(`❌ Error: ${errMsg}`, 'error');
+                    }
+                } catch (error) {
+                    setStatus(`❌ Exception: ${error.message}`, 'error');
+                } finally {
+                    validateUploadBtn();  // kembalikan state
+                }
+            });
+
+            function readFileAsBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        // hasil reader: data URL; kita ambil base64 setelah koma
+                        const base64 = reader.result.split(',')[1];
+                        resolve(base64);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            // default toggle off
+            extractToggle.classList.remove('active');
+            extractEnabled = false;
+            // validasi awal
+            validateUploadBtn();
+
+            // contoh placeholder
+        })();
+    </script>
+</body>
+</html>
